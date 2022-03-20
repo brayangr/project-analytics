@@ -109,16 +109,42 @@
   }
 
   function renderMonthlyVelocityChart() {
-    var element = document.getElementById('monthly-velocity-chart');
+    var element = document.getElementById('monthly-velocity-chart-by-story-count');
     var chart = new window.google.visualization.ColumnChart(element);
     var data = new window.google.visualization.DataTable();
 
     data.addColumn('date', 'Date');
     data.addColumn('number', 'Stories');
-    data.addRows(window.Data.MonthlyVelocityChart.slice(-12));
+    data.addRows(window.Data.MonthlyVelocityChartByStoryCount.slice(-12));
 
     var options = {
-      title: 'Monthly Velocity, Last 12 Months',
+      title: 'Monthly Velocity by story count, Last 12 Months',
+      titleTextStyle: { fontSize: 16 },
+      focusTarget: 'category',
+      isStacked: true,
+      chartArea: chartAreaOptions,
+      trendlines: {
+        0: {
+          type: 'exponential'
+        }
+      },
+      legend: 'none'
+    };
+
+    chart.draw(data, options);
+  }
+
+  function renderMonthlyVelocityByPointsChart() {
+    var element = document.getElementById('monthly-velocity-chart-by-points');
+    var chart = new window.google.visualization.ColumnChart(element);
+    var data = new window.google.visualization.DataTable();
+
+    data.addColumn('date', 'Date');
+    data.addColumn('number', 'Points');
+    data.addRows(window.Data.MonthlyVelocityChartByPoints.slice(-12));
+
+    var options = {
+      title: 'Monthly Velocity by points, Last 12 Months',
       titleTextStyle: { fontSize: 16 },
       focusTarget: 'category',
       isStacked: true,
@@ -228,6 +254,7 @@
     renderStoryTypeRatioChart();
     renderStoryTypeChart();
     renderMonthlyVelocityChart();
+    renderMonthlyVelocityByPointsChart()
     renderEstimateRatiosChart();
     renderCycleTimeChart();
   }

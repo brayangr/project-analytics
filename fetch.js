@@ -114,7 +114,7 @@ function calculateStoryTypeData(stories, dateRange) {
 }
 
 function calculateMonthlyVelocityChartData(stories, dateRange) {
-  var data = 'Data.MonthlyVelocityChart = [\n';
+  var data = 'Data.MonthlyVelocityChartByStoryCount = [\n';
   var velocity = 0;
 
   _.each(dateRange, function (day) {
@@ -127,6 +127,30 @@ function calculateMonthlyVelocityChartData(stories, dateRange) {
         // if (story.estimate) {
         //   velocity += story.estimate;
         // }
+      }
+    });
+
+    if (day.split('-')[2] === '01') {
+      data += '  [new Date("' + day + '"), ' + velocity + '],\n';
+      velocity = 0;
+    }
+  });
+
+  data += '];\n';
+
+  return data;
+}
+
+function calculateMonthlyVelocityChartByPointsData(stories, dateRange) {
+  var data = 'Data.MonthlyVelocityChartByPoints = [\n';
+  var velocity = 0;
+
+  _.each(dateRange, function (day) {
+    _.each(stories, function (story) {
+      if (story.completed_at.split('T')[0] === day) {
+        if (story.estimate) {
+          velocity += story.estimate;
+        }
       }
     });
 
@@ -195,6 +219,7 @@ function compileChartData(stories, project) {
   data += calculateStoryTypeData(stories, dateRange);
   data += calculateStoryRatioData(stories, dateRange);
   data += calculateMonthlyVelocityChartData(stories, dateRange);
+  data += calculateMonthlyVelocityChartByPointsData(stories, dateRange);
   data += calculateCycleTimeChartData(stories, dateRange);
   data += calculateEstimateChartData(stories);
 
@@ -254,7 +279,7 @@ function findMatchingProjects(projects, query) {
 }
 
 function compileProjectData() {
-  var query = process.argv[2];
+  var query = 'all'; //process.argv[2];
   console.log('Fetching projects...');
 
   fetchProjects(function (err, res, projects) {
@@ -327,7 +352,7 @@ function init() {
       compileGroupData();
       break;
     case GROUPING_TYPES.project:
-  compileProjectData();
+      compileProjectData();
       break;
     default:
       displayNoGroupingTypeMessage();
