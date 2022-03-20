@@ -12,13 +12,6 @@ var PROJECT_FILE = 'data/projects.js';
 
 var TOKEN = process.env.CLUBHOUSE_API_TOKEN;
 
-function fetchProjects(callback) {
-  request({
-    url: 'https://api.clubhouse.io/api/beta/projects?token=' + TOKEN,
-    json: true
-  }, callback);
-}
-
 function fetchCompletedStoriesForProject(projectID, callback) {
   request({
     url: 'https://api.clubhouse.io/api/beta/stories/search?token=' + TOKEN,
@@ -282,7 +275,9 @@ function compileProjectData() {
   var query = process.argv[3];
   console.log('Fetching projects...');
 
-  fetchProjects(function (err, res, projects) {
+  services.fetchProjects(function (err, res, projects) {
+    projects = JSON.parse(projects);
+
     if (err || !projects || projects.length === 0) {
       console.log('No projects found!');
       return false;
