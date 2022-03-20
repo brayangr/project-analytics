@@ -2,7 +2,9 @@ var fs = require('fs');
 
 var _ = require('lodash');
 var moment = require('moment');
-var request = require('request');
+const { GROUPING_TYPES } = require('./constants');
+const services = require('./services');
+const request = require('request');
 
 var MILLISECONDS_IN_A_DAY = 1000 * 60 * 60 * 24;
 var DATE_FORMAT = 'YYYY-MM-DD';
@@ -196,7 +198,7 @@ function compileChartData(stories, project) {
   data += calculateCycleTimeChartData(stories, dateRange);
   data += calculateEstimateChartData(stories);
 
-  fs.writeFileSync('data/project-' + project.id + '.js', data);
+  fs.writeFileSync(`data/project-${project.id}.js`, data);
 }
 
 function saveProjectsToFile(projects) {
@@ -206,6 +208,17 @@ function saveProjectsToFile(projects) {
   });
   _.each(_.filter(projects, { archived: true }), function (project) {
     data += 'ClubhouseProjects.push({ id: ' + project.id + ', name: "' + project.name + ' (archived)" });';
+  });
+  fs.writeFileSync(PROJECT_FILE, data);
+}
+
+const saveGroupsToFile = groups => {
+  var data = 'var ClubhouseProjects = [];';
+  _.each(_.filter(groups, { archived: false }), function (group) {
+    data += `ClubhouseProjects.push({ id: "${group.id}", name: "${group.name}"});`;
+  });
+  _.each(_.filter(groups, { archived: true }), function (group) {
+    data += `ClubhouseProjects.push({ id: "${group.id}", name: "${group.name}" (archived)});`;
   });
   fs.writeFileSync(PROJECT_FILE, data);
 }
@@ -271,6 +284,24 @@ function compileProjectData() {
   });
 }
 
+function compileGroupData() {
+  console.log('Fetching groups...');
+
+  services.fetchGroups((err, res, groups) => {
+    groups = _.sortBy(JSON.parse(groups), 'name');
+
+    groups.forEach(group => {
+      const { id: groupId} = group;
+      services.fetchGroupStories(groupId, (err, res, stories) => {
+        stories = JSON.parse(stories).filter(story => story.completed_at !== null);
+        compileChartData(stories, group);
+      });
+    });
+
+    saveGroupsToFile(groups);
+  });
+}
+
 function displayNoTokenMessage() {
   console.log('Missing CLUBHOUSE_API_TOKEN environment variable.');
   console.log('If you don\'t already have one, go to Clubhouse > Settings > Your Account > API Tokens to create one.');
@@ -278,12 +309,29 @@ function displayNoTokenMessage() {
   console.log('CLUBHOUSE_API_TOKEN="MYTOKEN"');
 }
 
+function displayNoGroupingTypeMessage() {
+  console.log('Missing grouping argument');
+  console.log('Use --project if you want to generate your charts by project.');
+  console.log('Use --group if you want to generate your charts by group');
+}
+
 function init() {
   if (!TOKEN) {
     return displayNoTokenMessage();
   }
 
+  var groupingType = process.argv[2];
+
+  switch(groupingType) {
+    case GROUPING_TYPES.group:
+      compileGroupData();
+      break;
+    case GROUPING_TYPES.project:
   compileProjectData();
+      break;
+    default:
+      displayNoGroupingTypeMessage();
+  }
 }
 
 init();
