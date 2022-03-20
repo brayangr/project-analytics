@@ -4,29 +4,12 @@ var _ = require('lodash');
 var moment = require('moment');
 const { GROUPING_TYPES } = require('./constants');
 const services = require('./services');
-const request = require('request');
 
 var MILLISECONDS_IN_A_DAY = 1000 * 60 * 60 * 24;
 var DATE_FORMAT = 'YYYY-MM-DD';
 var PROJECT_FILE = 'data/projects.js';
 
 var TOKEN = process.env.CLUBHOUSE_API_TOKEN;
-
-function fetchProjects(callback) {
-  request({
-    url: 'https://api.clubhouse.io/api/beta/projects?token=' + TOKEN,
-    json: true
-  }, callback);
-}
-
-function fetchCompletedStoriesForProject(projectID, callback) {
-  request({
-    url: 'https://api.clubhouse.io/api/beta/stories/search?token=' + TOKEN,
-    method: 'POST',
-    json: true,
-    body: { archived: false, project_ids: [projectID], workflow_state_types: ['done'] }
-  }, callback);
-}
 
 function createDateRange(fromDate, toDate) {
   var stack = [];
@@ -67,14 +50,8 @@ function calculateStoryRatioData(stories, dateRange) {
   _.each(dateRange, function (day) {
     _.each(stories, function (story) {
       if (story.completed_at.split('T')[0] === day) {
-        // Measure by story count:
         totals[story.story_type] += 1;
         totals.total += 1;
-
-        // Measure by points:
-        // if (story.estimate) {
-        //   totals[story.story_type] += story.estimate;
-        // }
       }
     });
     data += '  [new Date("' + day + '"), ' + (totals.feature / totals.total) + ', ' + (totals.bug / totals.total) + ', ' + (totals.chore / totals.total) + '],\n';
@@ -252,7 +229,8 @@ function fetchAndCompileChartForProject(project, callback) {
   callback = _.isFunction(callback) ? callback : _.noop;
   console.log('Fetching completed stories for project "' + project.name + '"...');
 
-  fetchCompletedStoriesForProject(project.id, function (err, res, stories) {
+  services.fetchCompletedStoriesForProject(project.id, function (err, res, stories) {
+    stories = JSON.parse(stories).filter(story => story.completed_at !== null);
     compileChartData(stories, project);
     callback();
   });
@@ -282,7 +260,9 @@ function compileProjectData() {
   var query = process.argv[3];
   console.log('Fetching projects...');
 
-  fetchProjects(function (err, res, projects) {
+  services.fetchProjects(function (err, res, projects) {
+    projects = JSON.parse(projects);
+
     if (err || !projects || projects.length === 0) {
       console.log('No projects found!');
       return false;

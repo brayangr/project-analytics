@@ -21,3 +21,13 @@ exports.fetchGroupStories = async (groupId, callback) => {
   const requestOptions = buildRequest(`https://api.app.shortcut.com/api/v3/groups/${groupId}/stories`);
   request(requestOptions, callback);
 }
+
+exports.fetchProjects = callback => {
+  const requestOptions = buildRequest('https://api.app.shortcut.com/api/v3/projects');
+  request(requestOptions, callback);
+}
+
+exports.fetchCompletedStoriesForProject = (projectID, callback) => {
+  const requestOptions = buildRequest(`https://api.app.shortcut.com/api/v3/projects/${projectID}/stories`)
+  request(requestOptions, callback);
+}
