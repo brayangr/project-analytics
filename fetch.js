@@ -279,7 +279,7 @@ function findMatchingProjects(projects, query) {
 }
 
 function compileProjectData() {
-  var query = 'all'; //process.argv[2];
+  var query = process.argv[3];
   console.log('Fetching projects...');
 
   fetchProjects(function (err, res, projects) {
